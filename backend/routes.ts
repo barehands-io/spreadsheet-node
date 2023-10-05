@@ -11,6 +11,7 @@ const Route = getInstanceRouter();
  */
 Route.get("/", "App@index").name("index");
 Route.get("/view", "App@view").name("view");
+Route.get("/all", "App@all").name("all");
 
 /**
  * Add 404 routes after plugins are loaded.
