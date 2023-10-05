@@ -10,7 +10,7 @@ const Route = getInstanceRouter();
  * The index method of the controller.
  */
 Route.get("/", "App@index").name("index");
-Route.get("/view", "App@view").name("view");
+Route.get("/process", "App@process").name("process");
 Route.get("/all", "App@all").name("all");
 
 /**

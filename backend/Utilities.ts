@@ -1,7 +1,7 @@
 import {$} from "../app";
 import XLSX from 'xlsx';
+import {SheetDataType} from "./models/SheetModel";
 
-console.log("Processing xls ---");
 
 
 const payload = $.path.storage("uploads/upload.xlsx");
@@ -22,4 +22,21 @@ export function processXls() {
     return XLSX.utils.sheet_to_json(worksheet);
 
 
+
+}
+
+
+export function refineData(item: any): SheetDataType | null {
+    // Validate or transform the data as needed
+    if (!item['Organisation Name']) {
+        return null; // or handle the error as you see fit
+    }
+
+    return {
+        createdAt: new Date(),
+        organization_name: item['Organisation Name'],
+        town_city: item['Town/City'],
+        type_rating: item['Type & Rating'],
+        route: item['Route']
+    };
 }
