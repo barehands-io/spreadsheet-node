@@ -61,7 +61,7 @@ const AppController = <Controller.Object>{
     async all(http) {
         const { page, perPage } = http.paginationQuery();
 
-        const { organization_name, type_rating, town_city, route } =
+        const { organization_name, type_rating, town_city, route, search } =
             http.$query.all() as {
                 organization_name?: string;
                 town_city?: string;
@@ -70,49 +70,32 @@ const AppController = <Controller.Object>{
                 search?: string;
             };
 
-        const routeAggregate = [
-            {
-                $group: {
-                    _id: "$route", // Group by route
-                    count: { $sum: 1 } // Count occurrences
-                }
-            },
-            {
-                $sort: { count: -1 } // Sort by count in descending order (optional)
-            }
-        ];
+        // Base aggregation pipeline
+        const baseAggregate: any[] = [];
 
-        const duplicateAggregate = [
-            {
-                $group: {
-                    _id: "$organization_name", // Group by organization_name
-                    count: { $sum: 1 } // Count occurrences
-                }
-            },
-            {
-                $match: {
-                    count: { $gt: 1 } // Filter for counts greater than 1 (duplicates)
-                }
-            }
-        ];
+        // Filtering based on query parameters
+        const matchCriteria: any = {};
+        if (organization_name) matchCriteria.organization_name = organization_name;
+        if (town_city) matchCriteria.town_city = town_city;
+        if (type_rating) matchCriteria.type_rating = type_rating;
+        if (route) matchCriteria.route = route;
 
-        console.log("town_city ---{PP", http.$query.all());
+        // Search functionality for organization_name
+        if (search) {
+            matchCriteria.organization_name = { $regex: search, $options: "i" }; // 'i' for case-insensitive
+        }
 
-        const data = await SheetModel.paginateAggregate(page, perPage, [
-            {
-                $match: {
-                    town_city: town_city || { $exists: true },
-                    type_rating: type_rating || { $exists: true },
-                    route: route || { $exists: true },
-                    organization_name: organization_name || { $exists: true }
-                }
-            }
-        ]);
+        if (Object.keys(matchCriteria).length) {
+            baseAggregate.push({ $match: matchCriteria });
+        }
+
+        const data = await SheetModel.paginateAggregate(page, perPage, baseAggregate);
 
         return {
             data
         };
     },
+
     /**
      * 404 Page handler
      * @param http
