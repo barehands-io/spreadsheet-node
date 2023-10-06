@@ -1,25 +1,6 @@
-export type RouteType =
-    | "Skilled Worker"
-    | "Global Business Mobility: Senior or Specialist Worker"
-    | "Tier 2 Ministers of Religion"
-    | "Creative Worker"
-    | "International Sportsperson"
-    | "Religious Worker"
-    | "Charity Worker"
-    | "Global Business Mobility: Graduate Trainee"
-    | "Government Authorised Exchange"
-    | "International Agreement"
-    | "Global Business Mobility: UK Expansion Worker"
-    | "Scale-up"
-    | "Global Business Mobility: Service Supplier"
-    | "Seasonal Worker"
-    | "Global Business Mobility: Secondment Worker"
-    | "Intra Company Transfers (ICT)"
-    | "Intra-company Routes";
-
 // For the result structure:
 export type RouteCount = {
-    _id: RouteType;
+    _id: String;
     count: number;
 };
 
@@ -34,3 +15,11 @@ export type RouteDataResult = {
 type RouteResponse = {
     data: RouteDataResult;
 };
+
+export interface SponsorLooseData {
+    "Organisation Name": string;
+    "Town/City"?: string;
+    "Type & Rating"?: string;
+    Route?: string;
+    // ... any other properties
+}

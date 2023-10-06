@@ -3,8 +3,7 @@
  * See https://xpresserjs.com/configuration/
  */
 import env from "./env";
-import {parseServerUrl} from "xpress-mongo";
-
+import { parseServerUrl } from "xpress-mongo";
 
 /**
  * Parse MongoDB URL
@@ -27,7 +26,11 @@ export = {
     server: {
         domain: env.APP_HOST,
         // Server Port
-        port: env.APP_PORT
+        port: env.APP_PORT,
+
+        use: {
+            cors: true
+        }
     },
 
     /**
@@ -57,6 +60,6 @@ export = {
     // Connection Config
     mongodb: {
         url: mongoUrl,
-        database: env.DB_NAME,
+        database: env.DB_NAME
     }
 };

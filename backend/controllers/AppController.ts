@@ -3,14 +3,9 @@ import { processXls, refineData } from "../Utilities";
 import SheetModel from "../models/SheetModel";
 import sheetModel from "../models/SheetModel";
 import { $ } from "../../app";
-
-interface DataItem {
-    "Organisation Name": string;
-    "Town/City"?: string;
-    "Type & Rating"?: string;
-    Route?: string;
-    // ... any other properties
-}
+import { PaginatedMetaData } from "xpress-mongo/src/types/pagination";
+import { SponsorLooseData } from "../models/types";
+import LocationsModel from "../models/LocationsModel";
 
 const AppController = <Controller.Object>{
     /**
@@ -27,7 +22,7 @@ const AppController = <Controller.Object>{
 
     async process() {
         const startTime = Date.now();
-        const data = processXls() as DataItem[];
+        const data = processXls() as SponsorLooseData[];
 
         try {
             for (const item of data) {
@@ -70,6 +65,8 @@ const AppController = <Controller.Object>{
                 search?: string;
             };
 
+        console.log(http.$query.all());
+
         // Base aggregation pipeline
         const baseAggregate: any[] = [];
 
@@ -80,11 +77,6 @@ const AppController = <Controller.Object>{
         if (type_rating) matchCriteria.type_rating = type_rating;
         if (route) matchCriteria.route = route;
 
-        // Search functionality for organization_name
-        if (search) {
-            matchCriteria.organization_name = { $regex: search, $options: "i" }; // 'i' for case-insensitive
-        }
-
         if (Object.keys(matchCriteria).length) {
             baseAggregate.push({ $match: matchCriteria });
         }
@@ -92,10 +84,148 @@ const AppController = <Controller.Object>{
         const data = await SheetModel.paginateAggregate(page, perPage, baseAggregate);
 
         return {
-            data
+            data: PaginatedMetaData(data)
         };
     },
 
+    async raw(http) {
+        const { page, perPage } = http.paginationQuery();
+
+        const pipeline = [
+            {
+                $group: {
+                    _id: "type_rating" // Group by route
+                }
+            },
+            {
+                $project: {
+                    type_rating: "$_id", // Project the route value
+                    _id: 0 // Exclude the default _id field
+                }
+            }
+        ];
+
+        const data = await SheetModel.paginateAggregate(page, perPage, pipeline);
+
+        const all_type_rating = await SheetModel.native()
+            .aggregate([
+                {
+                    $group: {
+                        _id: "$type_rating"
+                    }
+                }
+            ])
+            .toArray();
+
+        const stats = {
+            all_type_rating
+        };
+        return {
+            stats
+        };
+    },
+
+    async summary(http) {
+        const { page, perPage } = http.paginationQuery();
+
+        const total_companies = await SheetModel.count({});
+        const total_routes = await SheetModel.native()
+            .aggregate([
+                {
+                    $group: {
+                        _id: "$route"
+                    }
+                }
+            ])
+            .toArray();
+
+        const skilled_worker = await SheetModel.native()
+            .aggregate([
+                {
+                    $match: {
+                        route: "Skilled Worker" // Filter by Skilled Worker route
+                    }
+                }
+            ])
+            .toArray();
+
+        const total_locations = await SheetModel.native()
+            .aggregate([
+                {
+                    $group: {
+                        _id: "$town_city"
+                    }
+                }
+            ])
+            .toArray();
+
+        const locations = await SheetModel.paginateAggregate(30, perPage, [
+            {
+                $group: {
+                    _id: "$town_city"
+                }
+            }
+        ]);
+
+        const orgs_location_summary = await SheetModel.native()
+            .aggregate([
+                {
+                    $group: {
+                        _id: "$town_city", // Group by town/city
+                        numberOfOrganizations: { $sum: 1 } // Count the number of organizations for each town/city
+                    }
+                },
+                {
+                    $sort: { numberOfOrganizations: -1 } // Optional: Sort by the number of organizations in descending order
+                }
+            ])
+            .toArray();
+
+        const summary = {
+            total_companies,
+            total_routes: total_routes.length,
+            skilled_worker: skilled_worker.length,
+            total_locations: total_locations.length,
+            // locations: PaginatedMetaData(locations),
+            orgs_location_summary
+        };
+
+        return {
+            summary
+        };
+    },
+
+    async world(http) {
+        const { page, perPage } = http.paginationQuery();
+
+        const { search } = http.$query.all() as {
+            search?: string;
+        };
+
+        let aggregatePipeline = [];
+
+        // If there's a search query, add a match stage to the aggregation pipeline
+        if (search) {
+            aggregatePipeline.push({
+                $match: {
+                    city: new RegExp(search, "i") // This will perform a case-insensitive search on the city field
+                }
+            });
+        }
+
+        const data = await LocationsModel.paginateAggregate(
+            page,
+            perPage,
+            aggregatePipeline
+        );
+
+        const stats = {
+            data
+        };
+        return {
+            stats
+        };
+    },
     /**
      * 404 Page handler
      * @param http

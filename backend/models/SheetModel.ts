@@ -1,7 +1,6 @@
 import { is, XMongoModel, XMongoSchema } from "xpress-mongo";
 import { UseCollection } from "@xpresser/xpress-mongo";
 import BaseModel from "./BaseModel";
-import { RouteType } from "./types";
 
 /**
  * Interface for Model's `this.data`. (For Typescript)
@@ -18,7 +17,7 @@ export interface SheetDataType {
     uuid?: string;
     town_city?: string;
     type_rating?: string;
-    route?: RouteType;
+    route?: String;
 }
 
 class SheetModel extends BaseModel {
@@ -45,7 +44,7 @@ class SheetModel extends BaseModel {
  */
 UseCollection(SheetModel, "sponsor");
 
-SheetModel.createIndex(["organization_name", "town_city", "type_rating", "route"]);
+// SheetModel.createIndex(["organization_name", "town_city", "type_rating", "route"], true);
 
 // Export Model as Default
 export default SheetModel;
