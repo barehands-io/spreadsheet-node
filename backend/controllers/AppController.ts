@@ -77,6 +77,14 @@ const AppController = <Controller.Object>{
         if (type_rating) matchCriteria.type_rating = type_rating;
         if (route) matchCriteria.route = route;
 
+        // Add this block to search organization_name using the search query
+        if (search) {
+            matchCriteria.organization_name = {
+                $regex: search,
+                $options: "i" // case-insensitive search
+            };
+        }
+
         if (Object.keys(matchCriteria).length) {
             baseAggregate.push({ $match: matchCriteria });
         }
