@@ -167,16 +167,25 @@ const AppController = <Controller.Object>{
             }
         ]);
 
-        const orgs_location_summary = await SheetModel.native()
+        const routes = await SheetModel.native()
             .aggregate([
                 {
                     $group: {
-                        _id: "$town_city", // Group by town/city
-                        numberOfOrganizations: { $sum: 1 } // Count the number of organizations for each town/city
+                        _id: "$route",
+                        count: { $sum: 1 }
                     }
                 },
                 {
-                    $sort: { numberOfOrganizations: -1 } // Optional: Sort by the number of organizations in descending order
+                    $sort: {
+                        count: -1
+                    }
+                },
+                {
+                    $project: {
+                        label: "$_id",
+                        count: 1,
+                        _id: 0
+                    }
                 }
             ])
             .toArray();
@@ -186,12 +195,66 @@ const AppController = <Controller.Object>{
             total_routes: total_routes.length,
             skilled_worker: skilled_worker.length,
             total_locations: total_locations.length,
+            routes
+
             // locations: PaginatedMetaData(locations),
-            orgs_location_summary
         };
 
         return {
             summary
+        };
+    },
+
+    async location(http) {
+        const { page, perPage } = http.paginationQuery();
+
+        const orgs_location_summary = await SheetModel.paginateAggregate(page, perPage, [
+            {
+                $group: {
+                    _id: "$town_city", // Group by town/city
+                    numberOfOrganizations: { $sum: 1 } // Count the number of organizations for each town/city
+                }
+            },
+            {
+                $sort: { numberOfOrganizations: -1 } // Optional: Sort by the number of organizations in descending order
+            }
+        ]);
+
+        return {
+            data: PaginatedMetaData(orgs_location_summary)
+        };
+    },
+
+    async routes_locations(http) {
+        const { page, perPage } = http.paginationQuery();
+
+        const routes_locations = await SheetModel.paginateAggregate(page, perPage, [
+            {
+                $group: {
+                    _id: {
+                        route: "$route",
+                        town_city: "$town_city"
+                    },
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $sort: {
+                    count: -1
+                }
+            },
+            {
+                $project: {
+                    route: "$_id.route",
+                    location: "$_id.town_city",
+                    count: 1,
+                    _id: 0
+                }
+            }
+        ]);
+
+        return {
+            data: PaginatedMetaData(routes_locations)
         };
     },
 

@@ -15,6 +15,8 @@ Route.get("/all", "App@all").name("all");
 Route.get("/raw", "App@raw").name("raw");
 Route.get("/summary", "App@summary").name("summary");
 Route.get("/world", "App@world").name("world");
+Route.get("/location", "App@location").name("location");
+Route.get("/routes_locations", "App@routes_locations").name("routes_locations");
 
 /**
  * Add 404 routes after plugins are loaded.
